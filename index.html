@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oshi-Log : Akatsuki</title>
+    <style>
+        :root { --main-red: #d32f2f; --bg-white: #fcfcfc; }
+        body { background: var(--bg-white); color: #333; font-family: serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .header { color: var(--main-red); letter-spacing: 0.1em; margin: 10px 0; }
+        .card { background: white; width: 100%; max-width: 350px; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); border-top: 4px solid var(--main-red); margin-bottom: 20px; }
+        label { font-size: 0.8em; color: #999; display: block; margin-top: 10px; }
+        input { width: 100%; font-size: 1.2em; border: none; border-bottom: 1px solid #ddd; padding: 5px 0; outline: none; box-sizing: border-box; }
+        .big-input { font-size: 2em; color: var(--main-red); text-align: center; }
+        button { background: var(--main-red); color: white; border: none; padding: 15px; border-radius: 8px; width: 100%; margin-top: 15px; font-weight: bold; }
+        .secondary-btn { background: #666; margin-top: 10px; }
+        #historyView { display: none; width: 100%; max-width: 350px; }
+        .history-item { border-bottom: 1px solid #eee; padding: 10px 0; font-size: 0.9em; }
+        .lvl { background: var(--main-red); color: white; padding: 2px 10px; border-radius: 10px; font-size: 0.8em; }
+    </style>
+</head>
+<body>
+    <div id="mainView">
+        <div id="levelBadge" class="lvl">暁の明星 Lv.1</div>
+        <h2 class="header">Akatsuki</h2>
+        
+        <div class="card">
+            <label>日付</label>
+            <input type="date" id="dateInput">
+            <label>現在時刻</label>
+            <input type="time" id="timeInput">
+            <label>待機人数</label>
+            <input type="number" id="waitCount" class="big-input" placeholder="0">
+            
+            <button onclick="startWait()">待機開始（予測表示）</button>
+            <div id="prediction" style="text-align:center; margin-top:15px; color:var(--main-red); font-weight:bold;"></div>
+        </div>
+
+        <div class="card" id="resultArea" style="display:none;">
+            <label>入室時の予約率 (%)</label>
+            <input type="number" id="resRate" placeholder="85">
+            <div style="display:flex; gap:10px;">
+                <button onclick="finish(true)">成功</button>
+                <button onclick="finish(false)" style="background:#555;">失敗</button>
+            </div>
+        </div>
+        <button class="secondary-btn" onclick="toggleHistory()">待機履歴を見る</button>
+    </div>
+
+    <div id="historyView">
+        <h3 class="header">待機履歴</h3>
+        <div id="historyList"></div>
+        <button onclick="toggleHistory()">戻る</button>
+    </div>
+
+    <script>
+        // 初期値セット
+        const now = new Date();
+        document.getElementById('dateInput').value = now.toISOString().split('T')[0];
+        document.getElementById('timeInput').value = now.toTimeString().slice(0,5);
+
+        let history = JSON.parse(localStorage.getItem('akatsuki_logs') || '[]');
+        updateLevel();
+
+        function startWait() {
+            const count = document.getElementById('waitCount').value;
+            if(!count) return alert("人数を入れてください");
+            
+            const estMin = Math.ceil(count / 50); // 簡易予測ロジック
+            document.getElementById('prediction').innerText = `予想待ち時間: 約 ${estMin} 分`;
+            document.getElementById('resultArea').style.display = 'block';
+            
+            // 15分前通知のシミュレーション
+            if (estMin > 15) {
+                setTimeout(() => {
+                    alert("【Akatsuki通知】入室15分前です。心の準備を。");
+                }, 2000); // テスト用に2秒後に通知
+            }
+        }
+
+        function finish(isSuccess) {
+            const log = {
+                date: document.getElementById('dateInput').value,
+                count: document.getElementById('waitCount').value,
+                rate: document.getElementById('resRate').value,
+                success: isSuccess,
+                time: new Date().getTime()
+            };
+            history.push(log);
+            localStorage.setItem('akatsuki_logs', JSON.stringify(history));
+            alert(isSuccess ? "徳を積みましたね。おめでとうございます！" : "今回は縁がなかったようです。次へ備えましょう。");
+            location.reload();
+        }
+
+        function toggleHistory() {
+            const main = document.getElementById('mainView');
+            const hist = document.getElementById('historyView');
+            if (main.style.display === 'none') {
+                main.style.display = 'block';
+                hist.style.display = 'none';
+            } else {
+                main.style.display = 'none';
+                hist.style.display = 'block';
+                renderHistory();
+            }
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = history.map(h => `
+                <div class="history-item">
+                    ${h.date} | 人数:${h.count} | 予約率:${h.rate}% <br>
+                    結果: ${h.success ? '✅成功' : '❌失敗'}
+                </div>
+            `).join('');
+        }
+
+        function updateLevel() {
+            const lv = Math.floor(history.length / 3) + 1;
+            document.getElementById('levelBadge').innerText = `暁の明星 Lv.${lv}`;
+        }
+    </script>
+</body>
+</html>

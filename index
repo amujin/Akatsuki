@@ -1,0 +1,107 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Oshi-Log : Akatsuki</title>
+    <style>
+        body {
+            background-color: #fcfcfc;
+            color: #333;
+            font-family: "Times New Roman", "YuMincho", "Hiragino Mincho ProN", serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 40px 20px;
+            margin: 0;
+        }
+        .header {
+            color: #d32f2f;
+            letter-spacing: 0.1em;
+            margin-bottom: 40px;
+        }
+        .level-badge {
+            background: #d32f2f;
+            color: white;
+            padding: 5px 15px;
+            border-radius: 20px;
+            font-size: 0.8em;
+            font-family: sans-serif;
+        }
+        .card {
+            background: white;
+            width: 100%;
+            max-width: 350px;
+            padding: 30px;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            text-align: center;
+            border-top: 4px solid #d32f2f;
+        }
+        input {
+            width: 80%;
+            font-size: 40px;
+            border: none;
+            border-bottom: 1px solid #ddd;
+            text-align: center;
+            color: #d32f2f;
+            outline: none;
+            margin: 20px 0;
+        }
+        button {
+            background: #d32f2f;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 1em;
+            cursor: pointer;
+            width: 100%;
+            margin-top: 20px;
+        }
+        .prediction {
+            margin-top: 30px;
+            color: #666;
+            font-size: 0.9em;
+        }
+        .quote {
+            margin-top: 50px;
+            color: #999;
+            font-style: italic;
+            font-size: 0.8em;
+        }
+    </style>
+</head>
+<body>
+    <div class="level-badge" id="levelDisplay">暁の明星 (Lv.1)</div>
+    <h2 class="header">Oshi-Log : Akatsuki</h2>
+
+    <div class="card">
+        <div style="font-size: 0.8em; color: #999;">現在の待ち人数</div>
+        <input type="number" id="currentWait" placeholder="0" oninput="updatePrediction()">
+        <div class="prediction" id="result">数値を入力してください</div>
+        <button onclick="handleSuccess()">勝利！(入室成功)</button>
+    </div>
+
+    <div class="quote">“徳を積み、奇跡を待つ時間です。”</div>
+
+    <script>
+        let exp = 0;
+        function updatePrediction() {
+            const wait = document.getElementById('currentWait').value;
+            if (wait > 0) {
+                // 仮の予測ロジック（実際は過去データと照合）
+                const mins = Math.ceil(wait / 100); 
+                document.getElementById('result').innerText = `推定入室まで: あと ${mins} 分`;
+            }
+        }
+
+        function handleSuccess() {
+            exp += 50;
+            const lv = Math.floor(exp / 100) + 1;
+            document.getElementById('levelDisplay').innerText = `暁の明星 (Lv.${lv})`;
+            alert("おめでとうございます！最高の愛を伝えてきてください。");
+        }
+    </script>
+</body>
+</html>

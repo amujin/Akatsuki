@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTS_ARIRANG_TOUR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --main-red: #b33e3e; --bg-gray: #f2f2f2; }
+        body { background: var(--bg-gray); font-family: 'Noto Sans JP', sans-serif; margin: 0; display: flex; flex-direction: column; align-items: center; padding-bottom: 50px; }
+        .banner { width: 100%; max-width: 500px; height: 120px; background: url('https://raw.githubusercontent.com/amujin/Akatsuki/main/image.png') center/cover no-repeat; display: flex; align-items: center; justify-content: center; border-bottom: 4px solid var(--main-red); }
+        .banner::after { content: "“WE ARE GOING TOGETHER!”"; color: white; font-family: 'Montserrat', sans-serif; font-weight: 700; text-shadow: 2px 2px 4px rgba(0,0,0,0.7); }
+        .container { width: 90%; max-width: 400px; margin-top: 15px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.05); margin-bottom: 15px; }
+        label { font-size: 0.7rem; font-weight: 700; color: #888; display: block; margin-top: 10px; }
+        input, select { width: 100%; border: none; border-bottom: 2px solid #ddd; padding: 8px 0; outline: none; font-size: 1rem; }
+        button { background: var(--main-red); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: 700; margin-top: 15px; cursor: pointer; }
+        .sec-btn { background: #666; font-size: 0.8rem; margin-top: 10px; }
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 25px; border-radius: 20px; width: 85%; max-width: 350px; text-align: center; }
+        .view { display: none; width: 100%; }
+        .active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="banner"></div>
+
+    <div class="container">
+        <div id="mainView" class="view active">
+            <div style="display:flex; justify-content:space-between; align-items:center;">
+                <div id="lvl" style="background:var(--main-red); color:white; padding:2px 10px; border-radius:20px; font-size:0.7rem;">LV.1</div>
+                <span onclick="show('setView')" style="font-size:0.8rem; color:#888;">⚙️ Settings</span>
+            </div>
+            <h2 style="text-align:center; color:var(--main-red); font-family: 'Montserrat';">BTS_ARIRANG_TOUR</h2>
+            <div class="card">
+                <label>User Name</label>
+                <input type="text" id="userName">
+                <label>Start Date</label>
+                <input type="date" id="dateIn" oninput="calc()">
+                <label>Start Time</label>
+                <input type="time" id="timeIn" oninput="calc()">
+                <label>Waiting People</label>
+                <input type="number" id="countIn" style="font-size:1.8rem; text-align:center; color:var(--main-red);" oninput="calc()">
+                <div style="margin-top:15px; text-align:center; background:#fff5f5; padding:10px; border-radius:10px;">
+                    <span style="font-size:0.7rem; color:#666;">入室予定</span><br>
+                    <b id="preEta" style="font-size:1.4rem; color:var(--main-red);">--:--</b>
+                </div>
+                <button onclick="openModal()">入室ボタン</button>
+            </div>
+            <button class="sec-btn" onclick="show('histView')">HISTORY LOG</button>
+        </div>
+
+        <div id="histView" class="view">
+            <h2 style="text-align:center; color:var(--main-red);">History</h2>
+            <div id="logList"></div>
+            <button class="sec-btn" onclick="show('mainView')">BACK</button>
+        </div>
+
+        <div id="setView" class="view">
+            <h2 style="text-align:center; color:var(--main-red);">Settings</h2>
+            <div class="card">
+                <label>Speed (People/Hour)</label>
+                <input type="number" id="speedSet" value="70">
+                <button onclick="saveSet()">SAVE</button>
+            </div>
+            <button class="sec-btn" onclick="show('mainView')">BACK</button>
+        </div>
+    </div>
+
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <h3 style="color:var(--main-red);">入室記録</h3>
+            <label>予約率 (%)</label><input type="number" id="resRate">
+            <label>結果</label>
+            <select id="resSuccess">
+                <option value="true">成功！ ✅</option>
+                <option value="false">失敗 ❌</option>
+            </select>
+            <button id="submitBtn" onclick="submitEntry()">登録する</button>
+            <button class="sec-btn" style="background:none; color:#888;" onclick="closeModal()">キャンセル</button>
+        </div>
+    </div>
+
+    <script>
+        // --- 設定エリア ---
+        const gasUrl = "https://script.google.com/macros/s/AKfycbxF6o4EABvAHB72t90u167o9oJK_sJz9wU81O15xdE8q7DcFXHnEHqhXSMZonWxygD6/exec";
+        // ----------------
+
+        let logs = JSON.parse(localStorage.getItem('ari_logs') || '[]');
+        let speed = localStorage.getItem('ari_speed') || 70;
+
+        function init() {
+            const now = new Date();
+            document.getElementById('dateIn').value = now.toISOString().split('T')[0];
+            document.getElementById('timeIn').value = now.toTimeString().slice(0,5);
+            document.getElementById('userName').value = localStorage.getItem('ari_user') || 'Army';
+            document.getElementById('speedSet').value = speed;
+            updateLvl();
+        }
+
+        function show(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(id === 'histView') renderLogs();
+        }
+
+        function calc() {
+            const count = document.getElementById('countIn').value;
+            const start = document.getElementById('timeIn').value;
+            const date = document.getElementById('dateIn').value;
+            if(!count || !start) return "--:--";
+            const mins = Math.ceil(count / (speed / 60));
+            const etaDT = new Date(`${date}T${start}`);
+            etaDT.setMinutes(etaDT.getMinutes() + mins);
+            const etaStr = etaDT.toTimeString().slice(0,5);
+            document.getElementById('preEta').innerText = etaStr;
+            return etaStr;
+        }
+
+        function openModal() { document.getElementById('entryModal').style.display = 'flex'; }
+        function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+
+        async function submitEntry() {
+            const btn = document.getElementById('submitBtn');
+            btn.disabled = true;
+            btn.innerText = "送信中...";
+
+            const isSuccess = document.getElementById('resSuccess').value === "true";
+            const newLog = {
+                id: Date.now(),
+                user: document.getElementById('userName').value,
+                date: document.getElementById('dateIn').value,
+                count: document.getElementById('countIn').value,
+                start: document.getElementById('timeIn').value,
+                eta: calc(),
+                rate: document.getElementById('resRate').value,
+                success: isSuccess,
+                memo: ""
+            };
+
+            try {
+                // スプレッドシートへ送信
+                await fetch(gasUrl, { method: "POST", body: JSON.stringify(newLog) });
+                
+                // ローカル（ブラウザ）にも保存
+                logs.push(newLog);
+                localStorage.setItem('ari_logs', JSON.stringify(logs));
+                localStorage.setItem('ari_user', newLog.user);
+
+                alert(isSuccess ? "おめでとうございます！✨ 最高の思い出を！" : "お疲れ様でした。次は必ず一緒に行きましょう！💜");
+                location.reload();
+            } catch (e) {
+                alert("送信エラー！ブラウザのみに保存します。");
+                logs.push(newLog);
+                localStorage.setItem('ari_logs', JSON.stringify(logs));
+                location.reload();
+            }
+        }
+
+        function renderLogs() {
+            const list = document.getElementById('logList');
+            list.innerHTML = logs.slice().reverse().map(l => `
+                <div class="card" style="font-size:0.8rem; border-left:5px solid var(--main-red);">
+                    <b>${l.date} | ${l.user}</b><br>
+                    人数:${l.count} | 予約率:${l.rate}% | ${l.success ? '成功 ✅' : '失敗 ❌'}
+                </div>
+            `).join('');
+        }
+
+        function updateLvl() {
+            document.getElementById('lvl').innerText = `LEVEL ${Math.floor(logs.length/3) + 1}`;
+        }
+
+        function saveSet() {
+            localStorage.setItem('ari_speed', document.getElementById('speedSet').value);
+            alert("Settings saved!");
+            location.reload();
+        }
+
+        init();
+    </script>
+</body>
+</html>

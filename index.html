@@ -1,0 +1,296 @@
+
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTS_ARIRANG_TOUR v4</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --main-red: #b33e3e; --bg-gray: #f8f8f8; --success-green: #059669; }
+        body { background: var(--bg-gray); font-family: 'Noto Sans JP', sans-serif; margin: 0; padding-bottom: 50px; display: flex; flex-direction: column; align-items: center; }
+        
+        .banner { width: 100%; max-width: 500px; height: 130px; background: url('https://raw.githubusercontent.com/amujin/Akatsuki/main/IMG_7918.jpeg') center/cover no-repeat; border-bottom: 4px solid var(--main-red); display: flex; align-items: flex-end; }
+        .banner-text { background: rgba(0,0,0,0.4); color: white; width: 100%; text-align: center; padding: 5px 0; font-family: 'Montserrat'; font-size: 0.9rem; letter-spacing: 1px; }
+
+        .container { width: 92%; max-width: 400px; margin-top: 15px; }
+        .card { background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 15px rgba(0,0,0,0.08); margin-bottom: 15px; text-align: center; }
+        
+        #lvl-badge { background: linear-gradient(135deg, #b33e3e, #7c2d2d); color: white; padding: 15px; border-radius: 12px; margin-bottom: 15px; }
+
+        .history-item { background: white; border-radius: 12px; padding: 15px; margin-bottom: 10px; border-left: 6px solid #ddd; box-shadow: 0 2px 8px rgba(0,0,0,0.05); text-align: left; position: relative; }
+        .item-status { position: absolute; top: 10px; right: 10px; font-size: 0.7rem; padding: 2px 8px; border-radius: 50px; font-weight: 700; }
+        .status-win { background: #ecfdf5; color: var(--success-green); }
+        .status-lose { background: #fef2f2; color: var(--main-red); }
+
+        label { font-size: 0.75rem; font-weight: 700; color: #888; display: block; margin-top: 10px; text-align: left; }
+        input, select, textarea { width: 100%; border: none; border-bottom: 2px solid #eee; padding: 8px 0; outline: none; font-size: 1rem; font-family: inherit; box-sizing: border-box; background: transparent; }
+        
+        button { background: var(--main-red); color: white; border: none; padding: 15px; border-radius: 10px; width: 100%; font-weight: 700; margin-top: 15px; cursor: pointer; }
+        .sec-btn { background: #555; font-size: 0.8rem; margin-top: 10px; }
+        .action-btn { width: auto; padding: 6px 15px; font-size: 0.75rem; margin-top: 10px; margin-right: 5px; border-radius: 6px; }
+        
+        .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); align-items: center; justify-content: center; z-index: 1000; }
+        .modal-content { background: white; padding: 20px; border-radius: 20px; width: 85%; max-width: 350px; max-height: 90vh; overflow-y: auto; }
+        .view { display: none; width: 100%; }
+        .active { display: block; }
+    </style>
+</head>
+<body>
+
+    <div class="banner"><div class="banner-text">“WE ARE GOING TOGETHER!”</div></div>
+
+    <div class="container">
+        <div id="mainView" class="view active">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div id="lvl-top" style="background:var(--main-red); color:white; padding:3px 12px; border-radius:20px; font-size:0.75rem; font-weight:700;">LV.1</div>
+                <span onclick="syncData()" style="font-size:0.8rem; color:#888; cursor:pointer;">🔄 Sync Now</span>
+                <span onclick="show('setView')" style="font-size:1.2rem; cursor:pointer;">⚙️</span>
+            </div>
+            
+            <div class="card">
+                <label>User Name</label>
+                <input type="text" id="userName">
+                <label>Date</label>
+                <input type="date" id="dateIn" onchange="calc()">
+                <label>Start Time</label>
+                <input type="time" id="timeIn" onchange="calc()">
+                <label>Waiting People</label>
+                <input type="number" id="countIn" style="font-size:1.8rem; text-align:center; color:var(--main-red); font-weight:700;" placeholder="0" oninput="calc()">
+                
+                <div style="margin-top:15px; background:#fff5f5; padding:10px; border-radius:10px; border:1px dashed var(--main-red);">
+                    <span style="font-size:0.7rem; color:#666;">予測入室時刻</span><br>
+                    <b id="preEta" style="font-size:1.5rem; color:var(--main-red);">--:--</b>
+                </div>
+                <button onclick="openEntryModal()">入室を記録する</button>
+            </div>
+            <button class="sec-btn" onclick="show('histView')">VIEW HISTORY 💜</button>
+        </div>
+
+        <div id="histView" class="view">
+            <div id="lvl-badge">
+                <div id="rank-name" style="font-size: 1.1rem; font-weight: 700;">Loading...</div>
+                <div id="lvl-detail" style="font-size: 0.75rem; opacity: 0.9;">Leveling system active</div>
+            </div>
+            <button onclick="openManualAdd()" style="background:#222; margin-bottom:10px;">＋ 戦績を手動追加</button>
+            <div id="logList"></div>
+            <button class="sec-btn" onclick="show('mainView')">BACK</button>
+        </div>
+
+        <div id="setView" class="view">
+            <h2 style="text-align:center; color:var(--main-red);">Settings</h2>
+            <div class="card">
+                <label>Processing Speed (People/Hour)</label>
+                <input type="number" id="speedSet" value="70">
+                <button onclick="saveSet()">SAVE SETTINGS</button>
+            </div>
+            <button class="sec-btn" onclick="show('mainView')">BACK</button>
+        </div>
+    </div>
+
+    <div id="entryModal" class="modal">
+        <div class="modal-content">
+            <h3 id="modalTitle" style="text-align:center; color:var(--main-red); margin:0 0 15px 0;">戦績の保存</h3>
+            
+            <div id="extraFields" style="display:none;">
+                <label>User Name</label><input type="text" id="modalUser">
+                <label>Date</label><input type="date" id="modalDate" onchange="modalCalc()">
+                <label>Start Time</label><input type="time" id="modalTime" onchange="modalCalc()">
+                <label>Waiting People</label><input type="number" id="modalCount" oninput="modalCalc()">
+            </div>
+
+            <label>入室時間（修正可）</label>
+            <input type="time" id="modalEtaInput" style="font-size: 1.3rem; font-weight: 700; color: var(--main-red); text-align: center; border-bottom-color: var(--main-red);">
+
+            <label>予約率 (%)</label>
+            <input type="number" id="resRate" placeholder="0">
+            
+            <label>結果</label>
+            <select id="resSuccess">
+                <option value="true">成功！ ✅</option>
+                <option value="false">見送り ❌</option>
+            </select>
+            
+            <label>メモ</label>
+            <textarea id="resMemo" rows="3"></textarea>
+            
+            <button id="submitBtn" onclick="submitEntry()">保存する 💜</button>
+            <button class="sec-btn" style="background:none; color:#999;" onclick="closeModal()">キャンセル</button>
+        </div>
+    </div>
+
+    <script>
+        const gasUrl = "https://script.google.com/macros/s/AKfycbwhVYiN3xowSh80j0qlRJ_1n71mn73u7NrGLKTKaJKRsMNahHxivtk1djxRcjyK2w8b/exec";
+
+        let logs = [];
+        let speed = localStorage.getItem('ari_speed') || 70;
+        let editId = null;
+
+        const RANKS = [
+            { min: 0, title: "Beginner Army 🐣" },
+            { min: 3, title: "Active Army 🏃‍♂️" },
+            { min: 7, title: "Expert Army 🎯" },
+            { min: 12, title: "Elite Army ✨" },
+            { min: 20, title: "Legendary Army 👑" }
+        ];
+
+        // 時刻文字列を安全に取得（ISO形式などから時刻だけ抜く）
+        function cleanTime(t) {
+            if (!t) return "00:00";
+            let s = String(t);
+            if (s.includes('T')) return s.split('T')[1].slice(0,5);
+            return s.slice(0, 5);
+        }
+
+        function cleanDate(d) {
+            if (!d) return "";
+            return String(d).split('T')[0];
+        }
+
+        async function init() {
+            const now = new Date();
+            document.getElementById('dateIn').value = now.toISOString().split('T')[0];
+            document.getElementById('timeIn').value = now.toTimeString().slice(0,5);
+            document.getElementById('userName').value = localStorage.getItem('ari_user') || 'Army';
+            document.getElementById('speedSet').value = speed;
+            await syncData();
+        }
+
+        async function syncData() {
+            try {
+                const response = await fetch(gasUrl);
+                const data = await response.json();
+                if(data) logs = data;
+                localStorage.setItem('ari_logs_v4', JSON.stringify(logs));
+            } catch (e) {
+                logs = JSON.parse(localStorage.getItem('ari_logs_v4') || '[]');
+            }
+            renderLogs();
+            updateLvl();
+        }
+
+        function updateLvl() {
+            const count = logs.length;
+            const rank = [...RANKS].reverse().find(r => count >= r.min) || RANKS[0];
+            const lvl = Math.floor(count / 3) + 1;
+            document.getElementById('lvl-top').innerText = `LV.${lvl}`;
+            if(document.getElementById('rank-name')) {
+                document.getElementById('rank-name').innerText = `称号: ${rank.title}`;
+                document.getElementById('lvl-detail').innerText = `LEVEL ${lvl} (Total Exp: ${count})`;
+            }
+        }
+
+        function getEtaValue(date, time, count) {
+            if(!count || !time) return "--:--";
+            const mins = Math.ceil(count / (speed / 60));
+            const dt = new Date(`${cleanDate(date)}T${cleanTime(time)}`);
+            dt.setMinutes(dt.getMinutes() + mins);
+            return dt.toTimeString().slice(0,5);
+        }
+
+        function calc() { document.getElementById('preEta').innerText = getEtaValue(document.getElementById('dateIn').value, document.getElementById('timeIn').value, document.getElementById('countIn').value); }
+        function modalCalc() { document.getElementById('modalEtaInput').value = getEtaValue(document.getElementById('modalDate').value, document.getElementById('modalTime').value, document.getElementById('modalCount').value); }
+
+        function openEntryModal() {
+            editId = null;
+            document.getElementById('modalTitle').innerText = "戦績を記録";
+            document.getElementById('extraFields').style.display = 'none';
+            document.getElementById('modalEtaInput').value = document.getElementById('preEta').innerText;
+            document.getElementById('entryModal').style.display = 'flex';
+        }
+
+        function openManualAdd() {
+            editId = null;
+            document.getElementById('modalTitle').innerText = "手動で追加";
+            document.getElementById('extraFields').style.display = 'block';
+            document.getElementById('modalUser').value = document.getElementById('userName').value;
+            document.getElementById('modalDate').value = document.getElementById('dateIn').value;
+            document.getElementById('modalTime').value = "10:00";
+            document.getElementById('modalCount').value = "";
+            document.getElementById('modalEtaInput').value = "11:00";
+            document.getElementById('entryModal').style.display = 'flex';
+        }
+
+        async function submitEntry() {
+            const btn = document.getElementById('submitBtn');
+            const isManual = document.getElementById('extraFields').style.display === 'block';
+            
+            const data = {
+                action: editId ? "edit" : "new",
+                id: editId || Date.now(),
+                user: isManual ? document.getElementById('modalUser').value : document.getElementById('userName').value,
+                date: isManual ? document.getElementById('modalDate').value : document.getElementById('dateIn').value,
+                count: isManual ? document.getElementById('modalCount').value : document.getElementById('countIn').value,
+                start: cleanTime(isManual ? document.getElementById('modalTime').value : document.getElementById('timeIn').value),
+                eta: cleanTime(document.getElementById('modalEtaInput').value),
+                rate: document.getElementById('resRate').value || 0,
+                success: document.getElementById('resSuccess').value === "true",
+                memo: document.getElementById('resMemo').value
+            };
+
+            btn.disabled = true; btn.innerText = "Syncing...";
+            try {
+                await fetch(gasUrl, { method: "POST", mode: "no-cors", body: JSON.stringify(data) });
+                localStorage.setItem('ari_user', data.user);
+                location.reload();
+            } catch (e) { alert("Error"); btn.disabled = false; }
+        }
+
+        function renderLogs() {
+            const list = document.getElementById('logList');
+            if(logs.length === 0) { list.innerHTML = "<p>履歴がありません</p>"; return; }
+            list.innerHTML = logs.slice().reverse().map(l => `
+                <div class="history-item" style="border-left-color: ${l.success ? 'var(--success-green)' : 'var(--main-red)'}">
+                    <span class="item-status ${l.success ? 'status-win' : 'status-lose'}">${l.success ? '成功 ✅' : '見送り ❌'}</span>
+                    <div style="font-size:0.7rem; color:#888;">${cleanDate(l.date)} | ${l.user}</div>
+                    <div style="font-weight:700; font-size:1rem; margin:5px 0;">入室: ${cleanTime(l.eta)} <small style="font-weight:400;">(開始:${cleanTime(l.start)})</small></div>
+                    <div style="font-size:0.8rem;">人数: ${Number(l.count).toLocaleString()} | 予約率: ${l.rate}%</div>
+                    ${l.memo ? `<div style="background:#f9f9f9; padding:5px; border-radius:5px; margin-top:5px; font-size:0.75rem;">${l.memo}</div>` : ''}
+                    <div>
+                        <button class="action-btn" style="background:#f0f0f0; color:#666;" onclick="editLog(${l.id})">編集</button>
+                        <button class="action-btn" style="background:#fee2e2; color:#b33e3e;" onclick="deleteLog(${l.id})">削除</button>
+                    </div>
+                </div>
+            `).join('');
+        }
+
+        function editLog(id) {
+            const l = logs.find(log => log.id == id);
+            if(!l) return;
+            editId = id;
+            document.getElementById('modalTitle').innerText = "戦績を編集";
+            document.getElementById('extraFields').style.display = 'block';
+            document.getElementById('modalUser').value = l.user;
+            document.getElementById('modalDate').value = cleanDate(l.date);
+            document.getElementById('modalTime').value = cleanTime(l.start);
+            document.getElementById('modalCount').value = l.count;
+            document.getElementById('modalEtaInput').value = cleanTime(l.eta);
+            document.getElementById('resRate').value = l.rate;
+            document.getElementById('resSuccess').value = String(l.success);
+            document.getElementById('resMemo').value = l.memo;
+            document.getElementById('entryModal').style.display = 'flex';
+        }
+
+        async function deleteLog(id) {
+            if(!confirm("削除しますか？")) return;
+            await fetch(gasUrl, { method: "POST", mode: "no-cors", body: JSON.stringify({action: "delete", id: id}) });
+            location.reload();
+        }
+
+        function show(id) {
+            document.querySelectorAll('.view').forEach(v => v.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            if(id === 'histView') renderLogs();
+        }
+
+        function saveSet() {
+            speed = document.getElementById('speedSet').value;
+            localStorage.setItem('ari_speed', speed);
+            show('mainView');
+        }
+        
+        function closeModal() { document.getElementById('entryModal').style.display = 'none'; }
+        init();
+    </script>
+</body>
+</html>

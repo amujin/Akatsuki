@@ -1,0 +1,197 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BTS_ARIRANG_TOUR</title>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@700&family=Noto+Sans+JP:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        :root { --main-red: #e63946; --bg-gray: #f8f9fa; --text-dark: #2b2d42; }
+        body { background: var(--bg-gray); color: var(--text-dark); font-family: 'Noto Sans JP', sans-serif; display: flex; flex-direction: column; align-items: center; padding: 20px; margin: 0; }
+        .header { font-family: 'Montserrat', sans-serif; color: var(--main-red); letter-spacing: 2px; margin: 10px 0; font-size: 1.5rem; text-transform: uppercase; }
+        .card { background: white; width: 100%; max-width: 380px; padding: 25px; border-radius: 20px; box-shadow: 0 10px 30px rgba(0,0,0,0.08); border-top: 6px solid var(--main-red); margin-bottom: 20px; box-sizing: border-box; }
+        label { font-size: 0.75rem; font-weight: 700; color: #8d99ae; display: block; margin-top: 15px; text-transform: uppercase; }
+        input { width: 100%; font-size: 1.1rem; border: none; border-bottom: 2px solid #edf2f4; padding: 8px 0; outline: none; box-sizing: border-box; font-family: inherit; transition: border-color 0.3s; }
+        input:focus { border-bottom-color: var(--main-red); }
+        .big-input { font-size: 2.5rem; color: var(--main-red); text-align: center; font-family: 'Montserrat', sans-serif; font-weight: 700; }
+        button { background: var(--main-red); color: white; border: none; padding: 16px; border-radius: 12px; width: 100%; margin-top: 20px; font-weight: 700; cursor: pointer; font-size: 1rem; transition: opacity 0.2s; }
+        button:active { opacity: 0.8; }
+        .secondary-btn { background: #edf2f4; color: #2b2d42; margin-top: 10px; }
+        .view-section { display: none; width: 100%; max-width: 380px; }
+        #mainView { display: block; }
+        .history-item { background: white; margin-bottom: 10px; padding: 15px; border-radius: 12px; font-size: 0.85rem; border-left: 4px solid var(--main-red); box-shadow: 0 2px 5px rgba(0,0,0,0.05); }
+        .lvl { background: var(--main-red); color: white; padding: 4px 12px; border-radius: 50px; font-size: 0.75rem; font-family: 'Montserrat', sans-serif; font-weight: 700; }
+        .result-box { text-align: center; margin-top: 20px; padding: 15px; background: #fff1f2; border-radius: 12px; border: 1px dashed var(--main-red); }
+        .pop-msg { font-size: 0.8rem; color: #555; margin-top: 30px; font-style: italic; }
+    </style>
+</head>
+<body>
+    <div id="mainView" class="view-section">
+        <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+            <div id="levelBadge" class="lvl">LEVEL 1</div>
+            <button onclick="showView('settingsView')" style="width: auto; margin: 0; padding: 5px 10px; background: none; color: #8d99ae; font-size: 1.2rem;">⚙️</button>
+        </div>
+        <h2 class="header">BTS_ARIRANG_TOUR</h2>
+        
+        <div class="card">
+            <label>Date</label>
+            <input type="date" id="dateInput">
+            <label>Start Time</label>
+            <input type="time" id="timeInput">
+            <label>Waiting (people)</label>
+            <input type="number" id="waitCount" class="big-input" placeholder="0">
+            
+            <button onclick="startWait()">START PREDICTION</button>
+            
+            <div id="resultArea" class="result-box" style="display:none;">
+                <div id="predictionText" style="color:var(--main-red); font-weight:bold; font-size: 1.1rem;"></div>
+                <div id="etaText" style="color:#555; font-size: 0.9rem; margin-top: 5px;"></div>
+                
+                <hr style="border: 0; border-top: 1px solid #eee; margin: 15px 0;">
+                <label>Current Reservation Rate (%)</label>
+                <input type="number" id="resRate" placeholder="85">
+                <div style="display:flex; gap:10px;">
+                    <button onclick="finish(true)">SUCCESS!</button>
+                    <button onclick="finish(false)" style="background:#8d99ae;">FAILED</button>
+                </div>
+            </div>
+        </div>
+
+        <button class="secondary-btn" onclick="showView('historyView')">HISTORY LOG</button>
+        <div class="pop-msg">“Enjoy the wait! Magic is coming soon... ✨”</div>
+    </div>
+
+    <div id="historyView" class="view-section">
+        <h2 class="header">History List</h2>
+        <div class="card">
+            <h4 style="margin-top:0">Add Past Battle</h4>
+            <label>Date</label><input type="date" id="histDate">
+            <label>Success?</label>
+            <select id="histSuccess" style="width:100%; padding:10px; border-radius:8px; border:1px solid #ddd;">
+                <option value="true">Success ✅</option>
+                <option value="false">Failed ❌</option>
+            </select>
+            <button onclick="addManualHistory()" style="background:#2b2d42;">ADD TO LOG</button>
+        </div>
+        <div id="historyList"></div>
+        <button class="secondary-btn" onclick="showView('mainView')">BACK</button>
+    </div>
+
+    <div id="settingsView" class="view-section">
+        <h2 class="header">Settings</h2>
+        <div class="card">
+            <label>Processing Speed (people / hour)</label>
+            <input type="number" id="speedParam" value="70">
+            <p style="font-size: 0.7rem; color: #888;">標準は1時間あたり70人。会場の状況に合わせて調整してください。</p>
+            <button onclick="saveSettings()">SAVE SETTINGS</button>
+        </div>
+        <button class="secondary-btn" onclick="showView('mainView')">BACK</button>
+    </div>
+
+    <script>
+        let history = JSON.parse(localStorage.getItem('bts_logs') || '[]');
+        let speed = localStorage.getItem('bts_speed') || 70;
+        document.getElementById('speedParam').value = speed;
+
+        // 初期時刻
+        const init = () => {
+            const now = new Date();
+            document.getElementById('dateInput').value = now.toISOString().split('T')[0];
+            document.getElementById('timeInput').value = now.toTimeString().slice(0,5);
+            updateLevel();
+        };
+
+        function showView(viewId) {
+            document.querySelectorAll('.view-section').forEach(v => v.style.display = 'none');
+            document.getElementById(viewId).style.display = 'block';
+            if(viewId === 'historyView') renderHistory();
+        }
+
+        function saveSettings() {
+            speed = document.getElementById('speedParam').value;
+            localStorage.setItem('bts_speed', speed);
+            alert("Settings updated!");
+            showView('mainView');
+        }
+
+        function startWait() {
+            const count = document.getElementById('waitCount').value;
+            if(!count) return alert("Please enter count");
+            
+            // 計算：1分あたりの人数 = speed / 60
+            const peoplePerMin = speed / 60;
+            const estMin = Math.ceil(count / peoplePerMin);
+            
+            // 入室予定時刻の計算
+            const now = new Date();
+            const etaDate = new Date(now.getTime() + estMin * 60000);
+            const etaStr = etaDate.toTimeString().slice(0,5);
+
+            document.getElementById('predictionText').innerText = `Est. Wait: ${estMin} min`;
+            document.getElementById('etaText').innerText = `Estimated Entry: ${etaStr}`;
+            document.getElementById('resultArea').style.display = 'block';
+            
+            // 15分前通知のロジック
+            if (estMin > 15) {
+                const notifyInMs = (estMin - 15) * 60 * 1000;
+                setTimeout(() => {
+                    if (Notification.permission === "granted") {
+                        new Notification("BTS_ARIRANG_TOUR", { body: "入室15分前です！準備はいいですか？✨" });
+                    } else {
+                        alert("【15分前通知】まもなく入室です！準備してください！✨");
+                    }
+                }, notifyInMs);
+                console.log(`${estMin - 15}分後に通知予約しました`);
+            }
+        }
+
+        function finish(isSuccess) {
+            const log = {
+                date: document.getElementById('dateInput').value,
+                count: document.getElementById('waitCount').value,
+                rate: document.getElementById('resRate').value || 0,
+                success: isSuccess
+            };
+            saveLog(log);
+        }
+
+        function addManualHistory() {
+            const log = {
+                date: document.getElementById('histDate').value || 'Unknown',
+                count: '-',
+                rate: '-',
+                success: document.getElementById('histSuccess').value === "true"
+            };
+            saveLog(log);
+        }
+
+        function saveLog(log) {
+            history.push(log);
+            localStorage.setItem('bts_logs', JSON.stringify(history));
+            updateLevel();
+            alert("Logged! Keep the purple heart. 💜");
+            location.reload();
+        }
+
+        function renderHistory() {
+            const list = document.getElementById('historyList');
+            list.innerHTML = history.slice().reverse().map(h => `
+                <div class="history-item">
+                    <strong>${h.date}</strong><br>
+                    Wait: ${h.count} people | Rate: ${h.rate}%<br>
+                    Result: ${h.success ? '<span style="color:green">SUCCESS ✅</span>' : '<span style="color:red">FAILED ❌</span>'}
+                </div>
+            `).join('');
+        }
+
+        function updateLevel() {
+            const lv = Math.floor(history.length / 3) + 1;
+            document.getElementById('levelBadge').innerText = `LEVEL ${lv}`;
+        }
+
+        init();
+        // 通知許可のリクエスト（ブラウザ用）
+        if (window.Notification) Notification.requestPermission();
+    </script>
+</body>
+</html>

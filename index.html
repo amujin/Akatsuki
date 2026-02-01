@@ -1,0 +1,33 @@
+function submitEntry() {
+    const isSuccess = document.getElementById('resSuccess').value === "true";
+    const newLog = {
+        id: Date.now(),
+        user: document.getElementById('userName').value,
+        date: document.getElementById('dateIn').value,
+        count: document.getElementById('countIn').value,
+        start: document.getElementById('timeIn').value,
+        eta: calc(),
+        rate: document.getElementById('resRate').value,
+        success: isSuccess,
+        memo: ""
+    };
+
+    // --- ここからスプレッドシート送信処理 ---
+    const gasUrl = "https://script.google.com/macros/s/AKfycbxF6o4EABvAHB72t90u167o9oJK_sJz9wU81O15xdE8q7DcFXHnEHqhXSMZonWxygD6/exec";
+
+    fetch(gasUrl, {
+        method: "POST",
+        body: JSON.stringify(newLog)
+    })
+    .then(() => {
+        // ローカルにも一応保存しておく（保険用）
+        logs.push(newLog);
+        localStorage.setItem('ari_logs', JSON.stringify(logs));
+        alert("スプレッドシートに記録しました！✨\n一緒に行きましょう！");
+        location.reload();
+    })
+    .catch(err => {
+        alert("エラーが発生しました。ブラウザにのみ保存します。");
+        console.error(err);
+    });
+}
